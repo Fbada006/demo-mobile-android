@@ -44,12 +44,7 @@ public class ChatScreenAdapter extends BaseAdapter {
     }
 
     private void notifyChange() {
-        mainActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                notifyDataSetChanged();
-            }
-        });
+        mainActivity.runOnUiThread(this::notifyDataSetChanged);
     }
 
     @Override

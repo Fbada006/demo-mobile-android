@@ -47,15 +47,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             addCurrentMembers();
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
+            runOnUiThread(() -> {
 
-                    findViewById(R.id.progressBar).setVisibility(View.GONE);
-                    findViewById(R.id.chatLayout).setVisibility(View.VISIBLE);
-                    ((EditText) findViewById(R.id.textET)).removeTextChangedListener(isUserTypingTextWatcher);
-                    ((EditText) findViewById(R.id.textET)).addTextChangedListener(isUserTypingTextWatcher);
-                }
+                findViewById(R.id.progressBar).setVisibility(View.GONE);
+                findViewById(R.id.chatLayout).setVisibility(View.VISIBLE);
+                ((EditText) findViewById(R.id.textET)).removeTextChangedListener(isUserTypingTextWatcher);
+                ((EditText) findViewById(R.id.textET)).addTextChangedListener(isUserTypingTextWatcher);
             });
         }
     };
@@ -73,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private final PresenceHistoryRetrievedCallback getPresenceHistoryCallback = new PresenceHistoryRetrievedCallback() {
         @Override
         public void onPresenceHistoryRetrieved(Iterable<PresenceMessage> presenceMessages) {
-            ArrayList<PresenceMessage> messagesExceptUpdates = new ArrayList<PresenceMessage>();
+            ArrayList<PresenceMessage> messagesExceptUpdates = new ArrayList<>();
             for (PresenceMessage message : presenceMessages) {
                 if (message.action != PresenceMessage.Action.update) {
                     messagesExceptUpdates.add(message);
@@ -105,45 +102,42 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     break;
                 case update:
                     if (!presenceMessage.clientId.equals(Connection.getInstance().userName)) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                boolean isUserTyping = ((JsonObject) presenceMessage.data).get("isTyping").getAsBoolean();
-                                if (isUserTyping) {
-                                    usersCurrentlyTyping.add(presenceMessage.clientId);
-                                } else {
-                                    usersCurrentlyTyping.remove(presenceMessage.clientId);
-                                }
+                        runOnUiThread(() -> {
+                            boolean isUserTyping = ((JsonObject) presenceMessage.data).get("isTyping").getAsBoolean();
+                            if (isUserTyping) {
+                                usersCurrentlyTyping.add(presenceMessage.clientId);
+                            } else {
+                                usersCurrentlyTyping.remove(presenceMessage.clientId);
+                            }
 
-                                if (usersCurrentlyTyping.size() > 0) {
-                                    StringBuilder messageToShow = new StringBuilder();
-                                    switch (usersCurrentlyTyping.size()) {
-                                        case 1:
-                                            messageToShow.append(usersCurrentlyTyping.get(0) + " is typing");
-                                            break;
-                                        case 2:
-                                            messageToShow.append(usersCurrentlyTyping.get(0) + " and ");
-                                            messageToShow.append(usersCurrentlyTyping.get(1) + " are typing");
-                                            break;
-                                        default:
-                                            if (usersCurrentlyTyping.size() > 4) {
-                                                messageToShow.append(usersCurrentlyTyping.get(0) + ", ");
-                                                messageToShow.append(usersCurrentlyTyping.get(1) + ", ");
-                                                messageToShow.append(usersCurrentlyTyping.get(2) + " and other are typing");
-                                            } else {
-                                                int i;
-                                                for (i = 0; i < usersCurrentlyTyping.size() - 1; ++i) {
-                                                    messageToShow.append(usersCurrentlyTyping.get(i) + ", ");
-                                                }
-                                                messageToShow.append(" and " + usersCurrentlyTyping.get(i) + " are typing");
+                            if (usersCurrentlyTyping.size() > 0) {
+                                StringBuilder messageToShow = new StringBuilder();
+                                switch (usersCurrentlyTyping.size()) {
+                                    case 1:
+                                        messageToShow.append(usersCurrentlyTyping.get(0) + " is typing");
+                                        break;
+                                    case 2:
+                                        messageToShow.append(usersCurrentlyTyping.get(0) + " and ");
+                                        messageToShow.append(usersCurrentlyTyping.get(1) + " are typing");
+                                        break;
+                                    default:
+                                        if (usersCurrentlyTyping.size() > 4) {
+                                            messageToShow.append(usersCurrentlyTyping.get(0) + ", ");
+                                            messageToShow.append(usersCurrentlyTyping.get(1) + ", ");
+                                            messageToShow.append(usersCurrentlyTyping.get(2) + " and other are typing");
+                                        } else {
+                                            int i;
+                                            for (i = 0; i < usersCurrentlyTyping.size() - 1; ++i) {
+                                                messageToShow.append(usersCurrentlyTyping.get(i) + ", ");
                                             }
-                                    }
-
-                                    ((TextView) findViewById(R.id.isTyping)).setText(messageToShow.toString());
-                                    findViewById(R.id.isTypingContainer).setVisibility(View.VISIBLE);
-                                } else {
-                                    findViewById(R.id.isTypingContainer).setVisibility(View.GONE);
+                                            messageToShow.append(" and " + usersCurrentlyTyping.get(i) + " are typing");
+                                        }
                                 }
+
+                                ((TextView) findViewById(R.id.isTyping)).setText(messageToShow.toString());
+                                findViewById(R.id.isTypingContainer).setVisibility(View.VISIBLE);
+                            } else {
+                                findViewById(R.id.isTypingContainer).setVisibility(View.GONE);
                             }
                         });
                     }
@@ -153,12 +147,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
     private boolean activityPaused = false;
     private boolean typingFlag = false;
-    private final Runnable isUserTypingRunnable = new Runnable() {
-        @Override
-        public void run() {
-            Connection.getInstance().userHasEndedTyping();
-            typingFlag = false;
-        }
+    private final Runnable isUserTypingRunnable = () -> {
+        Connection.getInstance().userHasEndedTyping();
+        typingFlag = false;
     };
     private final TextWatcher isUserTypingTextWatcher = new TextWatcher() {
         @Override
@@ -174,12 +165,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void afterTextChanged(Editable s) {
             if (!typingFlag) {
-                Connection.getInstance().userHasStartedTyping(new ConnectionCallback() {
-                    @Override
-                    public void onConnectionCallback(Exception ex) {
-                        if (ex != null) {
-                            showError("Unable to send typing notification", ex);
-                        }
+                Connection.getInstance().userHasStartedTyping(ex -> {
+                    if (ex != null) {
+                        showError("Unable to send typing notification", ex);
                     }
                 });
                 typingFlag = true;
@@ -189,21 +177,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
     private String clientId;
-    private final ConnectionCallback connectionCallback = new ConnectionCallback() {
-        @Override
-        public void onConnectionCallback(Exception ex) {
-            if (ex != null) {
-                showError("Unable to connect", ex);
-                return;
-            }
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    showChatScreen();
-                }
-            });
+    private final ConnectionCallback connectionCallback = ex -> {
+        if (ex != null) {
+            showError("Unable to connect", ex);
+            return;
         }
+
+        runOnUiThread(() -> showChatScreen());
     };
 
     @Override
@@ -212,49 +192,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         findViewById(R.id.joinBtn).setOnClickListener(this);
         findViewById(R.id.mentionBtn).setOnClickListener(this);
-        ((TextView) findViewById(R.id.textET)).setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_SEND || event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
-                    try {
-                        CharSequence messageText = ((EditText) findViewById(R.id.textET)).getText();
+        ((TextView) findViewById(R.id.textET)).setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEND || event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                try {
+                    CharSequence messageText = ((EditText) findViewById(R.id.textET)).getText();
 
-                        if (TextUtils.isEmpty(messageText)) {
-                            return false;
+                    if (TextUtils.isEmpty(messageText)) {
+                        return false;
+                    }
+
+                    Connection.getInstance().sendMessage(messageText.toString(), ex -> {
+                        if (ex != null) {
+                            showError("Unable to send message", ex);
+                            return;
                         }
 
-                        Connection.getInstance().sendMessage(messageText.toString(), new ConnectionCallback() {
-                            @Override
-                            public void onConnectionCallback(Exception ex) {
-                                if (ex != null) {
-                                    showError("Unable to send message", ex);
-                                    return;
-                                }
-
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ((EditText) findViewById(R.id.textET)).setText("");
-                                    }
-                                });
-                            }
-                        });
-                    } catch (AblyException e) {
-                        e.printStackTrace();
-                    }
+                        runOnUiThread(() -> ((EditText) findViewById(R.id.textET)).setText(""));
+                    });
+                } catch (AblyException e) {
+                    e.printStackTrace();
                 }
-                return false;
             }
+            return false;
         });
-        ((TextView) this.findViewById(R.id.usernameET)).setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_GO || event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
-                    MainActivity.this.onClick(MainActivity.this.findViewById(R.id.joinBtn));
-                }
-
-                return false;
+        ((TextView) this.findViewById(R.id.usernameET)).setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_GO || event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                MainActivity.this.onClick(MainActivity.this.findViewById(R.id.joinBtn));
             }
+
+            return false;
         });
     }
 
@@ -273,23 +239,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         adapter = new ChatScreenAdapter(this, this.clientId);
         ((ListView) findViewById(R.id.chatList)).setAdapter(adapter);
         try {
-            Connection.getInstance().init(messageListener, presenceListener, new ConnectionCallback() {
-                @Override
-                public void onConnectionCallback(Exception ex) {
-                    if (ex != null) {
-                        showError("Unable to connect", ex);
-                        return;
-                    }
+            Connection.getInstance().init(messageListener, presenceListener, ex -> {
+                if (ex != null) {
+                    showError("Unable to connect", ex);
+                    return;
+                }
 
-                    chatInitializedCallback.onConnectionCallback(ex);
+                chatInitializedCallback.onConnectionCallback(ex);
 
-                    try {
-                        Connection.getInstance().getMessagesHistory(MainActivity.this.getMessageHistoryCallback);
-                        Connection.getInstance().getPresenceHistory(MainActivity.this.getPresenceHistoryCallback);
-                    } catch (AblyException e) {
-                        chatInitializedCallback.onConnectionCallback(e);
-                        e.printStackTrace();
-                    }
+                try {
+                    Connection.getInstance().getMessagesHistory(MainActivity.this.getMessageHistoryCallback);
+                    Connection.getInstance().getPresenceHistory(MainActivity.this.getPresenceHistoryCallback);
+                } catch (AblyException e) {
+                    chatInitializedCallback.onConnectionCallback(e);
+                    e.printStackTrace();
                 }
             });
         } catch (AblyException e) {
@@ -330,19 +293,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.mentionBtn:
                 AlertDialog.Builder adBuilder = new AlertDialog.Builder(this);
                 adBuilder.setSingleChoiceItems(new PresenceAdapter(this, presentUsers, this.clientId), -1,
-                    new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(final DialogInterface dialog, final int which) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    String textToAppend = String.format("@%s ", presentUsers.get(which));
-                                    ((EditText) findViewById(R.id.textET)).append(textToAppend);
-                                    dialog.cancel();
-                                }
-                            });
-                        }
-                    });
+                    (dialog, which) -> runOnUiThread(() -> {
+                        String textToAppend = String.format("@%s ", presentUsers.get(which));
+                        ((EditText) findViewById(R.id.textET)).append(textToAppend);
+                        dialog.cancel();
+                    }));
                 adBuilder.setTitle("Handles");
                 adBuilder.setIcon(R.drawable.user_list_title_icon);
                 adBuilder.show();
@@ -352,34 +307,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onActivityResult(int requestCode, final int resultCode, Intent data) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ((EditText) findViewById(R.id.textET)).setText(presentUsers.get(resultCode));
-            }
-        });
+        super.onActivityResult(requestCode, resultCode, data);
+        runOnUiThread(() -> ((EditText) findViewById(R.id.textET)).setText(presentUsers.get(resultCode)));
     }
 
     private void updatePresentUsersBadge() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ((TextView) findViewById(R.id.presenceBadge)).setText(String.valueOf(presentUsers.size()));
-            }
-        });
+        runOnUiThread(() -> ((TextView) findViewById(R.id.presenceBadge)).setText(String.valueOf(presentUsers.size())));
     }
 
     private void showError(final String title, final Exception ex) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_LONG).show();
-             /*   AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(MainActivity.this);
-                dialogBuilder.setTitle(title);
-                dialogBuilder.setMessage(ex.getMessage());
-                dialogBuilder.setCancelable(true);
-                dialogBuilder.show();*/
-            }
+        runOnUiThread(() -> {
+            Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_LONG).show();
+         /*   AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(MainActivity.this);
+            dialogBuilder.setTitle(title);
+            dialogBuilder.setMessage(ex.getMessage());
+            dialogBuilder.setCancelable(true);
+            dialogBuilder.show();*/
         });
     }
 

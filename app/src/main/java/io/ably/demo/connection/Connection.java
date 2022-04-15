@@ -50,45 +50,42 @@ public class Connection {
 
         ablyRealtime = new AblyRealtime(clientOptions);
 
-        ablyRealtime.connection.on(new ConnectionStateListener() {
-            @Override
-            public void onConnectionStateChanged(ConnectionStateChange connectionStateChange) {
-                switch (connectionStateChange.current) {
-                    case closed:
-                        break;
-                    case initialized:
-                        break;
-                    case connecting:
-                        break;
-                    case connected:
-                        sessionChannel = ablyRealtime.channels.get(ABLY_CHANNEL_NAME);
+        ablyRealtime.connection.on(connectionStateChange -> {
+            switch (connectionStateChange.current) {
+                case closed:
+                    break;
+                case initialized:
+                    break;
+                case connecting:
+                    break;
+                case connected:
+                    sessionChannel = ablyRealtime.channels.get(ABLY_CHANNEL_NAME);
 
-                        try {
-                            sessionChannel.attach();
-                            callback.onConnectionCallback(null);
-                        } catch (AblyException e) {
-                            e.printStackTrace();
-                            callback.onConnectionCallback(e);
-                            Log.e("ChannelAttach", "Something went wrong!");
-                            return;
-                        }
-                        break;
-                    case disconnected:
-                        callback.onConnectionCallback(
-                            new Exception("Ably connection was disconnected. We will retry connecting again in 30 seconds."));
-                        break;
-                    case suspended:
-                        callback.onConnectionCallback(
-                            new Exception("Ably connection was suspended. We will retry connecting again in 60 seconds."));
-                        break;
-                    case closing:
-                        sessionChannel.unsubscribe(messageListener);
-                        sessionChannel.presence.unsubscribe(presenceListener);
-                        break;
-                    case failed:
-                        callback.onConnectionCallback(new Exception("We're sorry, Ably connection failed. Please restart the app."));
-                        break;
-                }
+                    try {
+                        sessionChannel.attach();
+                        callback.onConnectionCallback(null);
+                    } catch (AblyException e) {
+                        e.printStackTrace();
+                        callback.onConnectionCallback(e);
+                        Log.e("ChannelAttach", "Something went wrong!");
+                        return;
+                    }
+                    break;
+                case disconnected:
+                    callback.onConnectionCallback(
+                        new Exception("Ably connection was disconnected. We will retry connecting again in 30 seconds."));
+                    break;
+                case suspended:
+                    callback.onConnectionCallback(
+                        new Exception("Ably connection was suspended. We will retry connecting again in 60 seconds."));
+                    break;
+                case closing:
+                    sessionChannel.unsubscribe(messageListener);
+                    sessionChannel.presence.unsubscribe(presenceListener);
+                    break;
+                case failed:
+                    callback.onConnectionCallback(new Exception("We're sorry, Ably connection failed. Please restart the app."));
+                    break;
             }
         });
     }
