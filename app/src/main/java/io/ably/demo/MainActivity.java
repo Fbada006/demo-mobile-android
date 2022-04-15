@@ -1,12 +1,15 @@
 package io.ably.demo;
 
+import java.util.ArrayList;
+
+import com.google.gson.JsonObject;
+
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -19,11 +22,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.gson.JsonObject;
-
-import java.util.ArrayList;
-
+import androidx.appcompat.app.AppCompatActivity;
 import io.ably.demo.connection.Connection;
 import io.ably.demo.connection.ConnectionCallback;
 import io.ably.demo.connection.MessageHistoryRetrievedCallback;
@@ -31,24 +30,65 @@ import io.ably.demo.connection.PresenceHistoryRetrievedCallback;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.Presence;
 import io.ably.lib.types.AblyException;
-import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PresenceMessage;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    private final Handler isUserTypingHandler = new Handler();
+    private final ArrayList<String> usersCurrentlyTyping = new ArrayList<>();
+    private final ArrayList<String> presentUsers = new ArrayList<>();
+    private final ConnectionCallback chatInitializedCallback = new ConnectionCallback() {
+        @Override
+        public void onConnectionCallback(Exception ex) {
+            if (ex != null) {
+                showError("Unable to connect to Ably service", ex);
+                return;
+            }
+
+            addCurrentMembers();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    findViewById(R.id.progressBar).setVisibility(View.GONE);
+                    findViewById(R.id.chatLayout).setVisibility(View.VISIBLE);
+                    ((EditText) findViewById(R.id.textET)).removeTextChangedListener(isUserTypingTextWatcher);
+                    ((EditText) findViewById(R.id.textET)).addTextChangedListener(isUserTypingTextWatcher);
+                }
+            });
+        }
+    };
     ChatScreenAdapter adapter;
+    private final MessageHistoryRetrievedCallback getMessageHistoryCallback = new MessageHistoryRetrievedCallback() {
+        @Override
+        public void onMessageHistoryRetrieved(Iterable<Message> messages, Exception ex) {
+            if (ex != null) {
+                showError("Unable to retrieve message history", ex);
+                return;
+            }
+            adapter.addItems(messages);
+        }
+    };
+    private final PresenceHistoryRetrievedCallback getPresenceHistoryCallback = new PresenceHistoryRetrievedCallback() {
+        @Override
+        public void onPresenceHistoryRetrieved(Iterable<PresenceMessage> presenceMessages) {
+            ArrayList<PresenceMessage> messagesExceptUpdates = new ArrayList<PresenceMessage>();
+            for (PresenceMessage message : presenceMessages) {
+                if (message.action != PresenceMessage.Action.update) {
+                    messagesExceptUpdates.add(message);
+                }
+            }
+
+            adapter.addItems(messagesExceptUpdates);
+        }
+    };
     Channel.MessageListener messageListener = new Channel.MessageListener() {
         @Override
         public void onMessage(Message message) {
             adapter.addItem(message);
         }
     };
-    private boolean activityPaused = false;
-    private Handler isUserTypingHandler = new Handler();
-    private boolean typingFlag = false;
-    private ArrayList<String> usersCurrentlyTyping = new ArrayList<>();
-    private ArrayList<String> presentUsers = new ArrayList<>();
     Presence.PresenceListener presenceListener = new Presence.PresenceListener() {
         @Override
         public void onPresenceMessage(final PresenceMessage presenceMessage) {
@@ -111,15 +151,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     };
-    private String clientId;
-    private Runnable isUserTypingRunnable = new Runnable() {
+    private boolean activityPaused = false;
+    private boolean typingFlag = false;
+    private final Runnable isUserTypingRunnable = new Runnable() {
         @Override
         public void run() {
             Connection.getInstance().userHasEndedTyping();
             typingFlag = false;
         }
     };
-    private TextWatcher isUserTypingTextWatcher = new TextWatcher() {
+    private final TextWatcher isUserTypingTextWatcher = new TextWatcher() {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -136,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Connection.getInstance().userHasStartedTyping(new ConnectionCallback() {
                     @Override
                     public void onConnectionCallback(Exception ex) {
-                        if(ex != null) {
+                        if (ex != null) {
                             showError("Unable to send typing notification", ex);
                         }
                     }
@@ -147,51 +188,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             isUserTypingHandler.postDelayed(isUserTypingRunnable, 5000);
         }
     };
-    private MessageHistoryRetrievedCallback getMessageHistoryCallback = new MessageHistoryRetrievedCallback() {
-        @Override
-        public void onMessageHistoryRetrieved(Iterable<Message> messages, Exception ex) {
-            if(ex != null) {
-                showError("Unable to retrieve message history", ex);
-                return;
-            }
-            adapter.addItems(messages);
-        }
-    };
-    private PresenceHistoryRetrievedCallback getPresenceHistoryCallback = new PresenceHistoryRetrievedCallback() {
-        @Override
-        public void onPresenceHistoryRetrieved(Iterable<PresenceMessage> presenceMessages) {
-            ArrayList<PresenceMessage> messagesExceptUpdates = new ArrayList<PresenceMessage>();
-            for (PresenceMessage message : presenceMessages) {
-                if (message.action != PresenceMessage.Action.update) {
-                    messagesExceptUpdates.add(message);
-                }
-            }
-
-            adapter.addItems(messagesExceptUpdates);
-        }
-    };
-    private ConnectionCallback chatInitializedCallback = new ConnectionCallback() {
-        @Override
-        public void onConnectionCallback(Exception ex) {
-            if(ex != null) {
-                showError("Unable to connect to Ably service", ex);
-                return;
-            }
-
-            addCurrentMembers();
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-
-                    findViewById(R.id.progressBar).setVisibility(View.GONE);
-                    findViewById(R.id.chatLayout).setVisibility(View.VISIBLE);
-                    ((EditText) findViewById(R.id.textET)).removeTextChangedListener(isUserTypingTextWatcher);
-                    ((EditText) findViewById(R.id.textET)).addTextChangedListener(isUserTypingTextWatcher);
-                }
-            });
-        }
-    };
-    private ConnectionCallback connectionCallback = new ConnectionCallback() {
+    private String clientId;
+    private final ConnectionCallback connectionCallback = new ConnectionCallback() {
         @Override
         public void onConnectionCallback(Exception ex) {
             if (ex != null) {
@@ -228,7 +226,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         Connection.getInstance().sendMessage(messageText.toString(), new ConnectionCallback() {
                             @Override
                             public void onConnectionCallback(Exception ex) {
-                                if(ex != null) {
+                                if (ex != null) {
                                     showError("Unable to send message", ex);
                                     return;
                                 }
@@ -278,7 +276,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Connection.getInstance().init(messageListener, presenceListener, new ConnectionCallback() {
                 @Override
                 public void onConnectionCallback(Exception ex) {
-                    if(ex != null) {
+                    if (ex != null) {
                         showError("Unable to connect", ex);
                         return;
                     }
@@ -331,19 +329,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.mentionBtn:
                 AlertDialog.Builder adBuilder = new AlertDialog.Builder(this);
-                adBuilder.setSingleChoiceItems(new PresenceAdapter(this, presentUsers, this.clientId), -1, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(final DialogInterface dialog, final int which) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                String textToAppend = String.format("@%s ", presentUsers.get(which));
-                                ((EditText) findViewById(R.id.textET)).append(textToAppend);
-                                dialog.cancel();
-                            }
-                        });
-                    }
-                });
+                adBuilder.setSingleChoiceItems(new PresenceAdapter(this, presentUsers, this.clientId), -1,
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(final DialogInterface dialog, final int which) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    String textToAppend = String.format("@%s ", presentUsers.get(which));
+                                    ((EditText) findViewById(R.id.textET)).append(textToAppend);
+                                    dialog.cancel();
+                                }
+                            });
+                        }
+                    });
                 adBuilder.setTitle("Handles");
                 adBuilder.setIcon(R.drawable.user_list_title_icon);
                 adBuilder.show();

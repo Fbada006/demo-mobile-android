@@ -1,5 +1,8 @@
 package io.ably.demo;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import android.graphics.Color;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
@@ -7,19 +10,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
-
-import java.util.ArrayList;
-import java.util.Collections;
-
 import io.ably.lib.types.BaseMessage;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PresenceMessage;
 
 public class ChatScreenAdapter extends BaseAdapter {
+    private final MainActivity mainActivity;
+    private final String ownClientId;
     LayoutInflater layoutInflater;
     ArrayList<BaseMessage> items = new ArrayList<>();
-    private MainActivity mainActivity;
-    private String ownClientId;
 
     public ChatScreenAdapter(MainActivity mainActivity, String ownClientId) {
         this.mainActivity = mainActivity;

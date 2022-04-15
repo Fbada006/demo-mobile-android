@@ -1,12 +1,11 @@
 package io.ably.demo.connection;
 
-import android.os.AsyncTask;
-import android.util.Log;
+import java.util.Arrays;
 
 import com.google.gson.JsonObject;
 
-import java.util.Arrays;
-
+import android.os.AsyncTask;
+import android.util.Log;
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.realtime.Channel;
 import io.ably.lib.realtime.CompletionListener;
@@ -21,10 +20,9 @@ import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
 
-
 public class Connection {
 
-    private static Connection instance = new Connection();
+    private static final Connection instance = new Connection();
     private final String ABLY_CHANNEL_NAME = "mobile:chat";
     private final String HISTORY_DIRECTION = "backwards";
     private final String HISTORY_LIMIT = "50";
@@ -76,10 +74,12 @@ public class Connection {
                         }
                         break;
                     case disconnected:
-                        callback.onConnectionCallback(new Exception("Ably connection was disconnected. We will retry connecting again in 30 seconds."));
+                        callback.onConnectionCallback(
+                            new Exception("Ably connection was disconnected. We will retry connecting again in 30 seconds."));
                         break;
                     case suspended:
-                        callback.onConnectionCallback(new Exception("Ably connection was suspended. We will retry connecting again in 60 seconds."));
+                        callback.onConnectionCallback(
+                            new Exception("Ably connection was suspended. We will retry connecting again in 60 seconds."));
                         break;
                     case closing:
                         sessionChannel.unsubscribe(messageListener);
@@ -111,7 +111,7 @@ public class Connection {
                     Param limitParameter = new Param("limit", HISTORY_LIMIT);
                     Param directionParameter = new Param("direction", HISTORY_DIRECTION);
                     Param untilAttachParameter = new Param("untilAttach", "true");
-                    Param[] presenceHistoryParams = {limitParameter, directionParameter, untilAttachParameter};
+                    Param[] presenceHistoryParams = { limitParameter, directionParameter, untilAttachParameter };
                     PaginatedResult<PresenceMessage> messages = sessionChannel.presence.history(presenceHistoryParams);
                     return Arrays.asList(messages.items());
                 } catch (AblyException e) {
@@ -139,7 +139,7 @@ public class Connection {
                     Param limitParameter = new Param("limit", HISTORY_LIMIT);
                     Param directionParameter = new Param("direction", HISTORY_DIRECTION);
                     Param untilAttachParameter = new Param("untilAttach", "true");
-                    Param[] historyCallParams = {limitParameter, directionParameter, untilAttachParameter};
+                    Param[] historyCallParams = { limitParameter, directionParameter, untilAttachParameter };
 
                     PaginatedResult<Message> messages = sessionChannel.history(historyCallParams);
                     return Arrays.asList(messages.items());
@@ -161,7 +161,8 @@ public class Connection {
 
     }
 
-    public void init(Channel.MessageListener listener, Presence.PresenceListener presenceListener, final ConnectionCallback callback) throws AblyException {
+    public void init(Channel.MessageListener listener, Presence.PresenceListener presenceListener, final ConnectionCallback callback)
+        throws AblyException {
         sessionChannel.subscribe(listener);
         messageListener = listener;
         sessionChannel.presence.subscribe(presenceListener);
@@ -229,7 +230,7 @@ public class Connection {
     }
 
     public void userHasEndedTyping() {
-        if(this.ablyRealtime.connection.state != ConnectionState.connected) {
+        if (this.ablyRealtime.connection.state != ConnectionState.connected) {
             return;
         }
 

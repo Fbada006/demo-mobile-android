@@ -1,34 +1,27 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion '26.0.2'
+    compileSdkVersion 32
+
     defaultConfig {
         applicationId 'com.ablydemo'
         minSdkVersion 16
-        targetSdkVersion 22
+        targetSdkVersion 32
         versionCode 1
         versionName "1.0"
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    productFlavors {
-    }
-}
-
-
-repositories {
-
-    maven { url "https://raw.github.com/paddybyers/Java-WebSocket/mvn-repo/" }
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:23.4.0'
-    compile 'com.android.support:percent:23.4.0'
-    compile 'io.ably:ably-android:1.0.2'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'androidx.percentlayout:percentlayout:1.0.0'
+    implementation 'io.ably:ably-android:1.0.2'
 
 }
