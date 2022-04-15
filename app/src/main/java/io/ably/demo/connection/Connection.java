@@ -104,66 +104,7 @@ public class Connection {
         }
     }
 
-    public void getPresenceHistory(final PresenceHistoryRetrievedCallback callback) throws AblyException {
-        AsyncTask getPresenceHistoryTask = new AsyncTask() {
-
-            @Override
-            protected Object doInBackground(Object[] params) {
-                try {
-                    Param limitParameter = new Param("limit", HISTORY_LIMIT);
-                    Param directionParameter = new Param("direction", HISTORY_DIRECTION);
-                    Param untilAttachParameter = new Param("untilAttach", "true");
-                    Param[] presenceHistoryParams = { limitParameter, directionParameter, untilAttachParameter };
-                    PaginatedResult<PresenceMessage> messages = sessionChannel.presence.history(presenceHistoryParams);
-                    return Arrays.asList(messages.items());
-                } catch (AblyException e) {
-                    Timber.e(e, "doInBackground: getPresenceHistory");
-                }
-
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Object result) {
-                if (result != null) {
-                    callback.onPresenceHistoryRetrieved((Iterable<PresenceMessage>) result);
-                }
-            }
-        };
-        getPresenceHistoryTask.execute();
-    }
-
     public void getMessagesHistory(final MessageHistoryRetrievedCallback callback) throws AblyException {
-        AsyncTask getMessageHistory = new AsyncTask() {
-            @Override
-            protected Object doInBackground(Object[] params) {
-                try {
-                    Param limitParameter = new Param("limit", HISTORY_LIMIT);
-                    Param directionParameter = new Param("direction", HISTORY_DIRECTION);
-                    Param untilAttachParameter = new Param("untilAttach", "true");
-                    Param[] historyCallParams = { limitParameter, directionParameter, untilAttachParameter };
-
-                    PaginatedResult<Message> messages = sessionChannel.history(historyCallParams);
-                    return Arrays.asList(messages.items());
-                } catch (AblyException e) {
-                    Timber.e(e, "doInBackground: getPresenceHistory");
-                    callback.onMessageHistoryRetrieved(Arrays.asList(new Message[] {}), e);
-                }
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Object result) {
-                if (result != null) {
-                    callback.onMessageHistoryRetrieved((Iterable<Message>) result, null);
-                }
-            }
-        };
-        getMessageHistory.execute();
-
-    }
-
-    public void getMessagesHistry(final MessageHistoryRetrievedCallback callback) throws AblyException {
         new AsyncTask<Void, Void, List<Message>>() {
             @Override
             protected List<Message> doInBackground(final Void... voids) {
@@ -191,7 +132,7 @@ public class Connection {
         }.execute();
     }
 
-    public void getPresenceHistry(final PresenceHistoryRetrievedCallback callback) throws AblyException {
+    public void getPresenceHistory(final PresenceHistoryRetrievedCallback callback) throws AblyException {
         new AsyncTask<Void, Void, List<PresenceMessage>>() {
             @Override
             protected List<PresenceMessage> doInBackground(final Void... voids) {
