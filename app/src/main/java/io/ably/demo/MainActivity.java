@@ -32,6 +32,7 @@ import io.ably.lib.realtime.Presence;
 import io.ably.lib.types.AblyException;
 import io.ably.lib.types.Message;
 import io.ably.lib.types.PresenceMessage;
+import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -287,7 +288,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Connection.getInstance().establishConnectionForID(this.clientId, connectionCallback);
                 } catch (AblyException e) {
                     showError("Unable to connect", e);
-                    Log.e("AblyConnection", e.getMessage());
+                    Timber.e(e);
                 }
                 break;
             case R.id.mentionBtn:
